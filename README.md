@@ -261,7 +261,45 @@ npm run dev      # Iniciar servidor de desenvolvimento
 npm run build    # Gerar build de producao
 npm run preview  # Visualizar build de producao
 npm run test     # Executar testes
+npm run lint     # Executar linting (ESLint)
 ```
+
+---
+
+## Permissoes do Diretorio `writable/`
+
+O CodeIgniter precisa de permissao de escrita no diretorio `writable/` e seus subdiretorios. Em **Linux/Mac**, execute:
+
+```bash
+chmod -R 775 writable/
+```
+
+Subdiretorios necessarios (ja incluidos no projeto):
+
+- `writable/cache/` — Cache da aplicacao e rate limiting
+- `writable/logs/` — Logs de erro e debug
+- `writable/session/` — Dados de sessao
+- `writable/uploads/` — Upload de arquivos (fotos de alunos)
+
+> **Nota:** No Windows, normalmente nao e necessario ajustar permissoes.
+
+---
+
+## Usando Apache (alternativa ao `php spark serve`)
+
+Se preferir usar **Apache** em vez do servidor embutido do PHP, certifique-se de que:
+
+1. O `mod_rewrite` esta habilitado:
+   ```bash
+   sudo a2enmod rewrite
+   sudo systemctl restart apache2
+   ```
+
+2. O `DocumentRoot` aponta para a pasta `public/` do projeto (nao para a raiz).
+
+3. O `AllowOverride All` esta configurado no VirtualHost para que o `.htaccess` funcione.
+
+> O arquivo `public/.htaccess` ja esta configurado com as regras de rewrite necessarias.
 
 ---
 
@@ -284,15 +322,46 @@ extension=mysqlnd
 
 ---
 
+## CORS (Cross-Origin Resource Sharing)
+
+O projeto ja vem configurado para lidar com CORS em ambiente de desenvolvimento. O backend permite requisicoes do frontend (`http://localhost:5173`) automaticamente.
+
+### Como funciona
+
+- O filtro CORS roda **antes e depois** de toda requisicao, tratando preflight (`OPTIONS`) e adicionando os headers necessarios na resposta.
+- O frontend envia cookies de autenticacao (JWT) via `withCredentials: true` no Axios, e o backend aceita com `supportsCredentials: true`.
+- Headers permitidos: `Content-Type`, `Authorization`, `X-Requested-With`
+- Metodos permitidos: `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`
+
+### Porta do frontend diferente
+
+Se o Vite subir em uma porta diferente da `5173` (por exemplo, `5174` quando a porta padrao esta ocupada), voce vera um erro de CORS no navegador. Para corrigir, atualize o `.env` do backend:
+
+```env
+# Uma unica origem
+CORS_ALLOWED_ORIGINS = 'http://localhost:5174'
+
+# Ou multiplas origens separadas por virgula
+CORS_ALLOWED_ORIGINS = 'http://localhost:5173,http://localhost:5174'
+```
+
+> **Importante:** Apos alterar o `.env`, reinicie o servidor backend (`php spark serve`).
+
+---
+
 ## Solucao de Problemas
 
 | Problema | Solucao |
 |----------|---------|
-| Erro de CORS no navegador | Verifique se `CORS_ALLOWED_ORIGINS` no `.env` corresponde a URL do frontend |
+| Erro de CORS no navegador | Verifique se a porta do frontend corresponde ao valor de `CORS_ALLOWED_ORIGINS` no `.env` do backend. Veja a secao [CORS](#cors-cross-origin-resource-sharing) acima |
 | Erro de conexao com banco | Confirme usuario, senha e nome do banco no `.env` |
 | `php spark serve` nao funciona | Verifique se o PHP 8.2+ esta no PATH do sistema |
 | `npm run dev` falha | Delete `node_modules` e `package-lock.json`, depois rode `npm install` novamente |
 | Token JWT expirado | Faca login novamente. O token expira em 1 hora por padrao |
+| Cookies nao enviados pelo navegador | Certifique-se de que o backend e frontend estao rodando em `localhost` (nao use `127.0.0.1` em um e `localhost` no outro) |
+| Busca de CEP nao funciona | O frontend consulta a API do [ViaCEP](https://viacep.com.br). Verifique sua conexao com a internet |
+| Erro de permissao no `writable/` | Execute `chmod -R 775 writable/` (Linux/Mac). Veja a secao [Permissoes](#permissoes-do-diretorio-writable) |
+| Rotas retornam 404 no Apache | Habilite o `mod_rewrite` e aponte o DocumentRoot para `public/`. Veja a secao [Apache](#usando-apache-alternativa-ao-php-spark-serve) |
 
 ---
 
