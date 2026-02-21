@@ -11,6 +11,16 @@ use CodeIgniter\Config\BaseConfig;
  */
 class Cors extends BaseConfig
 {
+    public function __construct()
+    {
+        parent::__construct();
+
+        $origins = env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173');
+        $this->default['allowedOrigins'] = array_values(array_filter(
+            array_map('trim', explode(',', $origins))
+        ));
+    }
+
     /**
      * The default CORS configuration.
      *
@@ -57,7 +67,7 @@ class Cors extends BaseConfig
          *
          * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials
          */
-        'supportsCredentials' => false,
+        'supportsCredentials' => true,
 
         /**
          * Set headers to allow.
@@ -68,7 +78,7 @@ class Cors extends BaseConfig
          *
          * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers
          */
-        'allowedHeaders' => [],
+        'allowedHeaders' => ['Content-Type', 'Authorization', 'X-Requested-With'],
 
         /**
          * Set headers to expose.
@@ -93,7 +103,7 @@ class Cors extends BaseConfig
          *
          * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods
          */
-        'allowedMethods' => [],
+        'allowedMethods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 
         /**
          * Set how many seconds the results of a preflight request can be cached.

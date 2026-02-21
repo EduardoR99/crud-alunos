@@ -1,69 +1,301 @@
-# CodeIgniter 4 Application Starter
+# CRUD Alunos
 
-## What is CodeIgniter?
+Sistema completo de gerenciamento de alunos com backend em **CodeIgniter 4** (PHP) e frontend em **React** com **Tailwind CSS**.
 
-CodeIgniter is a PHP full-stack web framework that is light, fast, flexible and secure.
-More information can be found at the [official site](https://codeigniter.com).
+## Funcionalidades
 
-This repository holds a composer-installable app starter.
-It has been built from the
-[development repository](https://github.com/codeigniter4/CodeIgniter4).
+- Autenticacao com JWT (registro, login, logout)
+- CRUD completo de alunos (criar, listar, editar, excluir)
+- Gerenciamento de contatos e enderecos dos alunos
+- Soft deletes (exclusao logica)
+- Rate limiting nas rotas de autenticacao
+- Tema claro/escuro
+- Validacao de formularios com Zod
+- Interface responsiva com Tailwind CSS
 
-More information about the plans for version 4 can be found in [CodeIgniter 4](https://forum.codeigniter.com/forumdisplay.php?fid=28) on the forums.
+## Tecnologias
 
-You can read the [user guide](https://codeigniter.com/user_guide/)
-corresponding to the latest version of the framework.
+### Backend
+- PHP 8.2+
+- CodeIgniter 4.7
+- MySQL/MariaDB
+- JWT (firebase/php-jwt)
 
-## Installation & updates
+### Frontend
+- React 19
+- Vite 7
+- Tailwind CSS 3
+- React Router 7
+- React Hook Form + Zod
+- Axios
 
-`composer create-project codeigniter4/appstarter` then `composer update` whenever
-there is a new release of the framework.
+---
 
-When updating, check the release notes to see if there are any changes you might need to apply
-to your `app` folder. The affected files can be copied or merged from
-`vendor/codeigniter4/framework/app`.
+## Pre-requisitos
 
-## Setup
+Antes de comecar, voce precisa ter instalado:
 
-Copy `env` to `.env` and tailor for your app, specifically the baseURL
-and any database settings.
+- [PHP 8.2+](https://www.php.net/downloads) com as extensoes: `intl`, `mbstring`, `mysqlnd`, `curl`, `json`
+- [Composer](https://getcomposer.org/download/)
+- [MySQL](https://dev.mysql.com/downloads/) ou [MariaDB](https://mariadb.org/download/)
+- [Node.js 18+](https://nodejs.org/) (inclui o npm)
+- [Git](https://git-scm.com/downloads)
 
-## Important Change with index.php
+---
 
-`index.php` is no longer in the root of the project! It has been moved inside the *public* folder,
-for better security and separation of components.
+## Instalacao
 
-This means that you should configure your web server to "point" to your project's *public* folder, and
-not to the project root. A better practice would be to configure a virtual host to point there. A poor practice would be to point your web server to the project root and expect to enter *public/...*, as the rest of your logic and the
-framework are exposed.
+### 1. Clonar o repositorio
 
-**Please** read the user guide for a better explanation of how CI4 works!
+```bash
+git clone https://github.com/seu-usuario/crud-alunos.git
+cd crud-alunos
+```
 
-## Repository Management
+### 2. Configurar o Backend
 
-We use GitHub issues, in our main repository, to track **BUGS** and to track approved **DEVELOPMENT** work packages.
-We use our [forum](http://forum.codeigniter.com) to provide SUPPORT and to discuss
-FEATURE REQUESTS.
+#### 2.1 Instalar dependencias do PHP
 
-This repository is a "distribution" one, built by our release preparation script.
-Problems with it can be raised on our forum, or as issues in the main repository.
+```bash
+composer install
+```
 
-## Server Requirements
+#### 2.2 Configurar variaveis de ambiente
 
-PHP version 8.2 or higher is required, with the following extensions installed:
+Copie o arquivo `env` para `.env` e edite as configuracoes:
 
-- [intl](http://php.net/manual/en/intl.requirements.php)
-- [mbstring](http://php.net/manual/en/mbstring.installation.php)
+```bash
+cp env .env
+```
 
-> [!WARNING]
-> - The end of life date for PHP 7.4 was November 28, 2022.
-> - The end of life date for PHP 8.0 was November 26, 2023.
-> - The end of life date for PHP 8.1 was December 31, 2025.
-> - If you are still using below PHP 8.2, you should upgrade immediately.
-> - The end of life date for PHP 8.2 will be December 31, 2026.
+Abra o `.env` e configure:
 
-Additionally, make sure that the following extensions are enabled in your PHP:
+```env
+#--------------------------------------------------------------------
+# ENVIRONMENT
+#--------------------------------------------------------------------
+CI_ENVIRONMENT = development
 
-- json (enabled by default - don't turn it off)
-- [mysqlnd](http://php.net/manual/en/mysqlnd.install.php) if you plan to use MySQL
-- [libcurl](http://php.net/manual/en/curl.requirements.php) if you plan to use the HTTP\CURLRequest library
+#--------------------------------------------------------------------
+# APP
+#--------------------------------------------------------------------
+app.baseURL = 'http://localhost:8080/'
+
+#--------------------------------------------------------------------
+# DATABASE
+#--------------------------------------------------------------------
+database.default.hostname = localhost
+database.default.database = crud_alunos
+database.default.username = root
+database.default.password = SUA_SENHA_AQUI
+database.default.DBDriver = MySQLi
+database.default.port = 3306
+
+#--------------------------------------------------------------------
+# JWT
+#--------------------------------------------------------------------
+JWT_SECRET_KEY = 'GERE_UMA_CHAVE_SECRETA_AQUI'
+JWT_EXPIRATION = 3600
+
+#--------------------------------------------------------------------
+# CORS
+#--------------------------------------------------------------------
+CORS_ALLOWED_ORIGINS = 'http://localhost:5173'
+
+#--------------------------------------------------------------------
+# SEED (usuario admin padrao)
+#--------------------------------------------------------------------
+SEED_ADMIN_NAME = 'Administrador'
+SEED_ADMIN_EMAIL = 'admin@admin.com'
+SEED_ADMIN_PASSWORD = 'SUA_SENHA_ADMIN_AQUI'
+```
+
+> **Dica:** Para gerar uma chave JWT segura, voce pode usar:
+> ```bash
+> php -r "echo bin2hex(random_bytes(32));"
+> ```
+
+#### 2.3 Criar o banco de dados
+
+Acesse o MySQL e crie o banco:
+
+```sql
+CREATE DATABASE crud_alunos CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+```
+
+#### 2.4 Executar as migrations
+
+```bash
+php spark migrate
+```
+
+Isso criara as tabelas: `users`, `students`, `student_contacts` e `student_addresses`.
+
+#### 2.5 Criar usuario administrador (opcional)
+
+```bash
+php spark db:seed UserSeeder
+```
+
+Isso criara o usuario admin com as credenciais definidas no `.env`.
+
+### 3. Configurar o Frontend
+
+#### 3.1 Instalar dependencias do Node.js
+
+```bash
+cd frontend
+npm install
+```
+
+#### 3.2 Configurar variaveis de ambiente (opcional)
+
+O frontend ja vem configurado para desenvolvimento. Se precisar alterar a URL da API, edite o arquivo `frontend/.env.development`:
+
+```env
+VITE_API_BASE_URL=http://localhost:8080/api
+```
+
+---
+
+## Executando o Projeto
+
+Voce precisara de **dois terminais** abertos simultaneamente:
+
+### Terminal 1 - Backend
+
+```bash
+# Na raiz do projeto
+php spark serve
+```
+
+O backend estara disponivel em: `http://localhost:8080`
+
+### Terminal 2 - Frontend
+
+```bash
+# Na pasta frontend
+cd frontend
+npm run dev
+```
+
+O frontend estara disponivel em: `http://localhost:5173`
+
+---
+
+## Endpoints da API
+
+### Autenticacao (publicos)
+
+| Metodo | Rota                  | Descricao              |
+|--------|-----------------------|------------------------|
+| POST   | `/api/auth/register`  | Registrar novo usuario |
+| POST   | `/api/auth/login`     | Fazer login            |
+| POST   | `/api/auth/logout`    | Fazer logout           |
+| GET    | `/api/auth/me`        | Dados do usuario logado|
+
+### Alunos (protegidos por JWT)
+
+| Metodo | Rota                  | Descricao              |
+|--------|-----------------------|------------------------|
+| GET    | `/api/students`       | Listar alunos          |
+| GET    | `/api/students/:id`   | Detalhes do aluno      |
+| POST   | `/api/students`       | Cadastrar aluno        |
+| PUT    | `/api/students/:id`   | Atualizar aluno        |
+| DELETE | `/api/students/:id`   | Excluir aluno          |
+
+---
+
+## Estrutura do Projeto
+
+```
+crud-alunos/
+├── app/
+│   ├── Config/              # Configuracoes (rotas, banco, CORS, filtros)
+│   ├── Controllers/Api/     # Controllers da API
+│   ├── Database/
+│   │   ├── Migrations/      # Migrations do banco de dados
+│   │   └── Seeds/           # Seeders (dados iniciais)
+│   ├── Entities/            # Entidades (User, Student, etc.)
+│   ├── Filters/             # Filtros (JWT, Rate Limit)
+│   ├── Models/              # Models do banco de dados
+│   ├── Rules/               # Regras de validacao
+│   ├── Services/            # Camada de servicos
+│   └── Traits/              # Traits reutilizaveis
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Componentes React
+│   │   ├── pages/           # Paginas da aplicacao
+│   │   ├── services/        # Servicos de API (Axios)
+│   │   ├── contexts/        # Contextos React (Auth, Theme)
+│   │   ├── hooks/           # Hooks customizados
+│   │   ├── models/          # Modelos de dados
+│   │   ├── utils/           # Utilitarios
+│   │   └── config/          # Configuracoes do frontend
+│   ├── .env.development     # Variaveis de ambiente (dev)
+│   └── .env.production      # Variaveis de ambiente (prod)
+├── tests/                   # Testes automatizados
+├── public/                  # Arquivos publicos
+├── writable/                # Logs, cache, uploads
+├── composer.json            # Dependencias PHP
+└── .env                     # Variaveis de ambiente do backend
+```
+
+---
+
+## Scripts Disponiveis
+
+### Backend
+
+```bash
+php spark serve              # Iniciar servidor de desenvolvimento
+php spark migrate            # Executar migrations
+php spark migrate:rollback   # Reverter ultima migration
+php spark db:seed UserSeeder # Criar usuario admin
+```
+
+### Frontend
+
+```bash
+npm run dev      # Iniciar servidor de desenvolvimento
+npm run build    # Gerar build de producao
+npm run preview  # Visualizar build de producao
+npm run test     # Executar testes
+```
+
+---
+
+## Verificacao das Extensoes PHP
+
+Para verificar se todas as extensoes necessarias estao habilitadas:
+
+```bash
+php -m | grep -E "intl|mbstring|mysqlnd|curl|json"
+```
+
+Caso alguma extensao esteja faltando, habilite-a no arquivo `php.ini` removendo o `;` da linha correspondente:
+
+```ini
+extension=intl
+extension=mbstring
+extension=curl
+extension=mysqlnd
+```
+
+---
+
+## Solucao de Problemas
+
+| Problema | Solucao |
+|----------|---------|
+| Erro de CORS no navegador | Verifique se `CORS_ALLOWED_ORIGINS` no `.env` corresponde a URL do frontend |
+| Erro de conexao com banco | Confirme usuario, senha e nome do banco no `.env` |
+| `php spark serve` nao funciona | Verifique se o PHP 8.2+ esta no PATH do sistema |
+| `npm run dev` falha | Delete `node_modules` e `package-lock.json`, depois rode `npm install` novamente |
+| Token JWT expirado | Faca login novamente. O token expira em 1 hora por padrao |
+
+---
+
+## Licenca
+
+Este projeto esta sob a licenca MIT.

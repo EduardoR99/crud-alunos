@@ -1,0 +1,220 @@
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { studentFormSchema } from '../models/studentSchema';
+import { useStudentForm } from '../hooks/useStudents';
+import { MESSAGES, SEXO_OPTIONS } from '../config/constants';
+import FormField, { inputBaseClass } from '../components/FormField';
+import MaskedInput from '../components/MaskedInput';
+import AddressFields from '../components/AddressFields';
+import ContactFields from '../components/ContactFields';
+import { maskCpf } from '../utils/masks';
+
+export default function StudentForm() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEditing = !!id;
+
+  const { loading, error, getStudent, saveStudent } = useStudentForm();
+  const [loadingData, setLoadingData] = useState(isEditing);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(studentFormSchema),
+    defaultValues: {
+      student: {
+        nome_completo: '',
+        cpf: '',
+        rg: '',
+        sexo: '',
+        genero: '',
+      },
+      contacts: [],
+      addresses: [],
+    },
+  });
+
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const loadStudent = async () => {
+      const data = await getStudent(Number(id));
+
+      if (data) {
+        reset({
+          student: {
+            nome_completo: data.nome_completo || '',
+            cpf: data.cpf || '',
+            rg: data.rg || '',
+            sexo: data.sexo || '',
+            genero: data.genero || '',
+          },
+          contacts: data.contacts?.map((c) => ({
+            email: c.email || '',
+            telefones: c.telefones || '',
+            rede_social: c.rede_social || '',
+          })) || [],
+          addresses: data.addresses?.map((a) => ({
+            cep: a.cep || '',
+            logradouro: a.logradouro || '',
+            bairro: a.bairro || '',
+            cidade: a.cidade || '',
+            estado: a.estado || '',
+            numero: a.numero || '',
+            complemento: a.complemento || '',
+            ponto_referencia: a.ponto_referencia || '',
+            tipo_endereco: a.tipo_endereco || 'residencial',
+          })) || [],
+        });
+      }
+
+      setLoadingData(false);
+    };
+
+    loadStudent();
+  }, [id, isEditing, getStudent, reset]);
+
+  const onSubmit = async (data) => {
+    const success = await saveStudent(data, isEditing ? Number(id) : null);
+
+    if (success) {
+      alert(isEditing ? MESSAGES.STUDENT_UPDATED : MESSAGES.STUDENT_CREATED);
+      navigate('/students');
+    }
+  };
+
+  if (loadingData) {
+    return (
+      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        Carregando dados do aluno...
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+        {isEditing ? 'Editar Aluno' : 'Novo Aluno'}
+      </h1>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        {/* Dados Pessoais */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Dados Pessoais
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              label="Nome Completo *"
+              error={errors?.student?.nome_completo?.message}
+              className="md:col-span-2"
+            >
+              <input
+                {...register('student.nome_completo')}
+                className={inputBaseClass}
+              />
+            </FormField>
+
+            <FormField
+              label="CPF *"
+              error={errors?.student?.cpf?.message}
+            >
+              <MaskedInput
+                name="student.cpf"
+                control={control}
+                mask={maskCpf}
+                placeholder="000.000.000-00"
+              />
+            </FormField>
+
+            <FormField
+              label="RG"
+              error={errors?.student?.rg?.message}
+            >
+              <input
+                {...register('student.rg')}
+                className={inputBaseClass}
+              />
+            </FormField>
+
+            <FormField
+              label="Sexo"
+              error={errors?.student?.sexo?.message}
+            >
+              <select
+                {...register('student.sexo')}
+                className={inputBaseClass}
+              >
+                <option value="">Selecione</option>
+                {SEXO_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </FormField>
+
+            <FormField
+              label="Gênero"
+              error={errors?.student?.genero?.message}
+            >
+              <input
+                {...register('student.genero')}
+                className={inputBaseClass}
+              />
+            </FormField>
+          </div>
+        </div>
+
+        {/* Contatos */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+          <ContactFields
+            control={control}
+            register={register}
+            errors={errors}
+          />
+        </div>
+
+        {/* Endereços */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+          <AddressFields
+            control={control}
+            register={register}
+            errors={errors}
+            setValue={setValue}
+          />
+        </div>
+
+        {/* Ações */}
+        <div className="flex gap-4">
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-medium rounded-lg transition-colors"
+          >
+            {loading ? 'Salvando...' : isEditing ? 'Atualizar' : 'Cadastrar'}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/students')}
+            className="px-6 py-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-medium rounded-lg transition-colors"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

@@ -3,6 +3,8 @@
 namespace Config;
 
 use CodeIgniter\Config\Filters as BaseFilters;
+use App\Filters\JWTFilter;
+use App\Filters\RateLimitFilter;
 use CodeIgniter\Filters\Cors;
 use CodeIgniter\Filters\CSRF;
 use CodeIgniter\Filters\DebugToolbar;
@@ -31,6 +33,8 @@ class Filters extends BaseFilters
         'invalidchars'  => InvalidChars::class,
         'secureheaders' => SecureHeaders::class,
         'cors'          => Cors::class,
+        'jwt'           => JWTFilter::class,
+        'ratelimit'     => RateLimitFilter::class,
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
@@ -53,11 +57,14 @@ class Filters extends BaseFilters
         'before' => [
             'forcehttps', // Force Global Secure Requests
             'pagecache',  // Web Page Caching
+            'cors',       // CORS preflight (deve rodar antes do routing)
         ],
         'after' => [
-            'pagecache',   // Web Page Caching
-            'performance', // Performance Metrics
-            'toolbar',     // Debug Toolbar
+            'secureheaders', // Security Headers (X-Frame-Options, X-Content-Type-Options, etc.)
+            'cors',          // CORS headers na response
+            'pagecache',     // Web Page Caching
+            'performance',   // Performance Metrics
+            'toolbar',       // Debug Toolbar
         ],
     ];
 
@@ -71,15 +78,8 @@ class Filters extends BaseFilters
      * }
      */
     public array $globals = [
-        'before' => [
-            // 'honeypot',
-            // 'csrf',
-            // 'invalidchars',
-        ],
-        'after' => [
-            // 'honeypot',
-            // 'secureheaders',
-        ],
+        'before' => [],
+        'after' => [],
     ];
 
     /**
