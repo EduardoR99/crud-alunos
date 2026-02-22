@@ -30,12 +30,6 @@ class StudentAddressModel extends Model
     protected $updatedField = 'updated_at';
     protected $deletedField = 'deleted_at';
 
-    /**
-     * Busca endereços em lote por IDs de alunos (prevenção N+1).
-     *
-     * @param int[] $studentIds
-     * @return array<int, StudentAddress[]>
-     */
     public function findByStudentIds(array $studentIds): array
     {
         if (empty($studentIds)) {
@@ -52,19 +46,11 @@ class StudentAddressModel extends Model
         return $grouped;
     }
 
-    /**
-     * Hard delete dos endereços de um aluno.
-     * Usado na estratégia de update (delete + re-insert),
-     * evitando acumular registros soft-deleted.
-     */
     public function hardDeleteByStudentId(int $studentId): void
     {
         $this->where('student_id', $studentId)->delete(null, true);
     }
 
-    /**
-     * Soft delete dos endereços de um aluno.
-     */
     public function deleteByStudentId(int $studentId): void
     {
         $this->where('student_id', $studentId)->delete();

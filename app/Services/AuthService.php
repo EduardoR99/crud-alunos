@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\DTOs\Request\CreateUserRequest;
+use App\DTOs\Request\LoginRequest;
+use App\DTOs\Response\UserResponse;
 use App\Entities\User;
 use App\Models\UserModel;
 use Firebase\JWT\JWT;
@@ -26,19 +29,19 @@ class AuthService
         }
     }
 
-    public function register(string $nomeCompleto, string $email, string $password): array
+    public function register(CreateUserRequest $dto): array
     {
-        $existing = $this->userModel->findByEmail($email);
+        $existing = $this->userModel->findByEmail($dto->email);
 
         if ($existing !== null) {
             throw new RuntimeException('E-mail já cadastrado.');
         }
 
         $user = new User([
-            'nome_completo' => $nomeCompleto,
-            'email'         => $email,
+            'nome_completo' => $dto->nome_completo,
+            'email'         => $dto->email,
         ]);
-        $user->setPassword($password);
+        $user->setPassword($dto->password);
 
         $this->userModel->insert($user);
         $user->id = (int) $this->userModel->getInsertID();
@@ -48,19 +51,15 @@ class AuthService
         return [
             'token'      => $token,
             'expires_in' => $this->expiration,
-            'user'       => [
-                'id'            => $user->id,
-                'nome_completo' => $user->nome_completo,
-                'email'         => $user->email,
-            ],
+            'user'       => UserResponse::fromEntity($user),
         ];
     }
 
-    public function authenticate(string $email, string $password): ?array
+    public function authenticate(LoginRequest $dto): ?array
     {
-        $user = $this->userModel->findByEmail($email);
+        $user = $this->userModel->findByEmail($dto->email);
 
-        if ($user === null || !$user->verifyPassword($password)) {
+        if ($user === null || !$user->verifyPassword($dto->password)) {
             return null;
         }
 
@@ -69,11 +68,7 @@ class AuthService
         return [
             'token'      => $token,
             'expires_in' => $this->expiration,
-            'user'       => [
-                'id'            => $user->id,
-                'nome_completo' => $user->nome_completo,
-                'email'         => $user->email,
-            ],
+            'user'       => UserResponse::fromEntity($user),
         ];
     }
 
@@ -111,7 +106,6 @@ class AuthService
                 \Config\Services::cache()->save($key, true, $ttl);
             }
         } catch (\Exception) {
-            // Token já inválido/expirado, não precisa blacklistar
         }
     }
 

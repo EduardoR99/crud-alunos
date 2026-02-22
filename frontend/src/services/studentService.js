@@ -28,4 +28,9 @@ export const studentService = {
     const response = await api.delete(`/students/${id}`);
     return response.data;
   },
+
+  async restore(id, data) {
+    const response = await api.post(`/students/${id}/restore`, data);
+    return response.data;
+  },
 };

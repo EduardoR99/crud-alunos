@@ -8,10 +8,6 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 class RateLimitFilter implements FilterInterface
 {
-    /**
-     * Rate limiting simples baseado em cache.
-     * Limita por IP + rota para prevenir brute force.
-     */
     public function before(RequestInterface $request, $arguments = null)
     {
         $maxAttempts = (int) ($arguments[0] ?? 10);

@@ -14,10 +14,7 @@ class Student extends Entity
 
     protected $datamap = [];
 
-    /** @var StudentContact[] */
     public array $contacts = [];
-
-    /** @var StudentAddress[] */
     public array $addresses = [];
 
     public function jsonSerialize(): array

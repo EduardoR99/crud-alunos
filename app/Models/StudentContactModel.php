@@ -24,12 +24,21 @@ class StudentContactModel extends Model
     protected $updatedField = 'updated_at';
     protected $deletedField = 'deleted_at';
 
-    /**
-     * Busca contatos em lote por IDs de alunos (prevenção N+1).
-     *
-     * @param int[] $studentIds
-     * @return array<int, StudentContact[]>
-     */
+    protected $validationRules = [
+        'email'        => 'permit_empty|valid_email|max_length[255]',
+        'telefones'    => 'permit_empty|regex_match[/^\(\d{2}\)\s?\d{4,5}-?\d{4}$/]|max_length[255]',
+        'rede_social'  => 'permit_empty|regex_match[/^@?[a-zA-Z0-9._]{1,30}$/]|max_length[255]',
+    ];
+
+    protected $validationMessages = [
+        'telefones' => [
+            'regex_match' => 'Telefone inválido (formato: (00) 00000-0000 ou (00) 0000-0000)',
+        ],
+        'rede_social' => [
+            'regex_match' => 'Usuário de rede social inválido (apenas letras, números, . e _)',
+        ],
+    ];
+
     public function findByStudentIds(array $studentIds): array
     {
         if (empty($studentIds)) {
@@ -46,19 +55,11 @@ class StudentContactModel extends Model
         return $grouped;
     }
 
-    /**
-     * Hard delete dos contatos de um aluno.
-     * Usado na estratégia de update (delete + re-insert),
-     * evitando acumular registros soft-deleted.
-     */
     public function hardDeleteByStudentId(int $studentId): void
     {
         $this->where('student_id', $studentId)->delete(null, true);
     }
 
-    /**
-     * Soft delete dos contatos de um aluno.
-     */
     public function deleteByStudentId(int $studentId): void
     {
         $this->where('student_id', $studentId)->delete();

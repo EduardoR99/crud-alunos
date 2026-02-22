@@ -71,11 +71,20 @@ export function useStudentForm() {
       } else {
         await studentService.create(data);
       }
-      return true;
+      return { success: true };
     } catch (err) {
+      if (err.response?.status === 409 && err.response?.data?.status === 'conflict') {
+        return {
+          success: false,
+          conflict: true,
+          deletedStudentId: err.response.data.data?.deleted_student_id,
+          cpf: err.response.data.data?.cpf,
+        };
+      }
+
       const message = err.response?.data?.message || MESSAGES.GENERIC_ERROR;
       setError(message);
-      return false;
+      return { success: false };
     } finally {
       setLoading(false);
     }

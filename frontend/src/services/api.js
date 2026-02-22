@@ -15,7 +15,6 @@ export function setOnUnauthorized(callback) {
   onUnauthorized = callback;
 }
 
-// Interceptor de Response: trata 401 globalmente
 api.interceptors.response.use(
   (response) => response,
   (error) => {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import toast from 'react-hot-toast';
 import { studentFormSchema } from '../models/studentSchema';
 import { useStudentForm } from '../hooks/useStudents';
 import { MESSAGES, SEXO_OPTIONS } from '../config/constants';
@@ -9,7 +10,9 @@ import FormField, { inputBaseClass } from '../components/FormField';
 import MaskedInput from '../components/MaskedInput';
 import AddressFields from '../components/AddressFields';
 import ContactFields from '../components/ContactFields';
+import ConfirmModal from '../components/ConfirmModal';
 import { maskCpf } from '../utils/masks';
+import { studentService } from '../services/studentService';
 
 export default function StudentForm() {
   const { id } = useParams();
@@ -18,6 +21,9 @@ export default function StudentForm() {
 
   const { loading, error, getStudent, saveStudent } = useStudentForm();
   const [loadingData, setLoadingData] = useState(isEditing);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [deletedStudentId, setDeletedStudentId] = useState(null);
+  const [pendingFormData, setPendingFormData] = useState(null);
 
   const {
     register,
@@ -82,11 +88,28 @@ export default function StudentForm() {
   }, [id, isEditing, getStudent, reset]);
 
   const onSubmit = async (data) => {
-    const success = await saveStudent(data, isEditing ? Number(id) : null);
+    const result = await saveStudent(data, isEditing ? Number(id) : null);
 
-    if (success) {
-      alert(isEditing ? MESSAGES.STUDENT_UPDATED : MESSAGES.STUDENT_CREATED);
+    if (result.success) {
+      toast.success(isEditing ? MESSAGES.STUDENT_UPDATED : MESSAGES.STUDENT_CREATED);
       navigate('/students');
+    } else if (result.conflict) {
+      setDeletedStudentId(result.deletedStudentId);
+      setPendingFormData(data);
+      setShowRestoreModal(true);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!deletedStudentId || !pendingFormData) return;
+
+    try {
+      await studentService.restore(deletedStudentId, pendingFormData);
+      toast.success('Aluno restaurado e atualizado com sucesso!');
+      navigate('/students');
+    } catch (err) {
+      const message = err.response?.data?.message || MESSAGES.GENERIC_ERROR;
+      toast.error(message);
     }
   };
 
@@ -215,6 +238,17 @@ export default function StudentForm() {
           </button>
         </div>
       </form>
+
+      <ConfirmModal
+        isOpen={showRestoreModal}
+        onClose={() => setShowRestoreModal(false)}
+        onConfirm={handleRestore}
+        title="Aluno excluído encontrado"
+        message="Já existe um aluno excluído com este CPF. Deseja reativá-lo e atualizar com os novos dados?"
+        confirmText="Reativar"
+        cancelText="Cancelar"
+        variant="warning"
+      />
     </div>
   );
 }

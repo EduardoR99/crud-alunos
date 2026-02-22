@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
 const cepRegex = /^\d{5}-?\d{3}$/;
+const phoneRegex = /^\(\d{2}\)\s?\d{4,5}-?\d{4}$/;
+const socialMediaRegex = /^@?[a-zA-Z0-9._]{1,30}$/;
 
 const contactSchema = z.object({
   email: z
@@ -12,11 +14,17 @@ const contactSchema = z.object({
     .optional(),
   telefones: z
     .string()
-    .max(255, 'Telefone deve ter no máximo 255 caracteres')
+    .refine(
+      (val) => !val || phoneRegex.test(val),
+      'Telefone inválido (formato: (00) 00000-0000 ou (00) 0000-0000)'
+    )
     .optional(),
   rede_social: z
     .string()
-    .max(255, 'Rede social deve ter no máximo 255 caracteres')
+    .refine(
+      (val) => !val || socialMediaRegex.test(val),
+      'Usuário de rede social inválido (apenas letras, números, . e _)'
+    )
     .optional(),
 });
 

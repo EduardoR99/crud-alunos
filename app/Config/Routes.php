@@ -21,5 +21,6 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function (R
         $routes->post('students', 'StudentController::create');
         $routes->put('students/(:num)', 'StudentController::update/$1');
         $routes->delete('students/(:num)', 'StudentController::delete/$1');
+        $routes->post('students/(:num)/restore', 'StudentController::restore/$1');
     });
 });

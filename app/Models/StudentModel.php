@@ -26,12 +26,6 @@ class StudentModel extends Model
     protected $updatedField = 'updated_at';
     protected $deletedField = 'deleted_at';
 
-    /**
-     * Listagem otimizada: apenas colunas necessárias para a tabela.
-     * Evita SELECT * para performance em alto volume.
-     *
-     * @return array{data: Student[], pager: \CodeIgniter\Pager\Pager}
-     */
     public function paginatedList(int $perPage = 15, ?string $search = null): array
     {
         $builder = $this->select('id, nome_completo, cpf, created_at');
@@ -49,5 +43,10 @@ class StudentModel extends Model
             'data'  => $builder->paginate($perPage),
             'pager' => $this->pager,
         ];
+    }
+
+    public function findDeletedByCpf(string $cpf): ?Student
+    {
+        return $this->onlyDeleted()->where('cpf', $cpf)->first();
     }
 }

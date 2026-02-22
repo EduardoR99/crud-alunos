@@ -2,6 +2,9 @@
 
 namespace App\Controllers\Api;
 
+use App\DTOs\Request\CreateUserRequest;
+use App\DTOs\Request\LoginRequest;
+use App\DTOs\Response\UserResponse;
 use App\Traits\ApiResponseTrait;
 use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\RESTful\ResourceController;
@@ -31,18 +34,20 @@ class AuthController extends ResourceController
             return $this->validationError($this->validator->getErrors());
         }
 
-        $nomeCompleto = $this->request->getJsonVar('nome_completo');
-        $email        = $this->request->getJsonVar('email');
-        $password     = $this->request->getJsonVar('password');
+        $dto = new CreateUserRequest(
+            nome_completo: $this->request->getJsonVar('nome_completo'),
+            email: $this->request->getJsonVar('email'),
+            password: $this->request->getJsonVar('password')
+        );
 
         try {
-            $result = Services::authService()->register($nomeCompleto, $email, $password);
+            $result = Services::authService()->register($dto);
         } catch (RuntimeException $e) {
             return $this->conflict($e->getMessage());
         }
 
         $response = $this->created(
-            ['user' => $result['user']],
+            ['user' => $result['user']->toArray()],
             'Usuário registrado com sucesso.',
         );
 
@@ -60,16 +65,18 @@ class AuthController extends ResourceController
             return $this->validationError($this->validator->getErrors());
         }
 
-        $email    = $this->request->getJsonVar('email');
-        $password = $this->request->getJsonVar('password');
+        $dto = new LoginRequest(
+            email: $this->request->getJsonVar('email'),
+            password: $this->request->getJsonVar('password')
+        );
 
-        $result = Services::authService()->authenticate($email, $password);
+        $result = Services::authService()->authenticate($dto);
 
         if ($result === null) {
             return $this->unauthorized('Credenciais inválidas.');
         }
 
-        $response = $this->success(['user' => $result['user']]);
+        $response = $this->success(['user' => $result['user']->toArray()]);
 
         return $this->setTokenCookie($response, $result['token'], $result['expires_in']);
     }
@@ -83,13 +90,13 @@ class AuthController extends ResourceController
             return $this->unauthorized('Token inválido ou expirado.');
         }
 
-        return $this->success([
-            'user' => [
-                'id'            => $decoded->sub,
-                'nome_completo' => $decoded->data->nome_completo,
-                'email'         => $decoded->data->email,
-            ],
-        ]);
+        $userDto = new UserResponse(
+            id: $decoded->sub,
+            nome_completo: $decoded->data->nome_completo,
+            email: $decoded->data->email
+        );
+
+        return $this->success(['user' => $userDto->toArray()]);
     }
 
     public function logout(): ResponseInterface
@@ -117,7 +124,7 @@ class AuthController extends ResourceController
             '/',
             '',
             $secure,
-            true,       // httpOnly
+            true,
             'Lax'
         );
     }

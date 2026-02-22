@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { studentService } from '../services/studentService';
 import { MESSAGES, PAGINATION } from '../config/constants';
+import ConfirmModal from '../components/ConfirmModal';
 
 function maskCpf(cpf) {
   if (!cpf || cpf.length < 11) return cpf;
@@ -13,6 +15,7 @@ export default function StudentList() {
   const [meta, setMeta] = useState({ current_page: 1, page_count: 1, total: 0 });
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, studentId: null });
 
   const fetchStudents = useCallback(async (page = 1, searchTerm = '') => {
     setLoading(true);
@@ -21,7 +24,7 @@ export default function StudentList() {
       setStudents(response.data);
       setMeta(response.meta);
     } catch {
-      alert(MESSAGES.GENERIC_ERROR);
+      toast.error(MESSAGES.GENERIC_ERROR);
     } finally {
       setLoading(false);
     }
@@ -36,14 +39,21 @@ export default function StudentList() {
     fetchStudents(1, search);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm(MESSAGES.CONFIRM_DELETE)) return;
+  const openDeleteConfirm = (id) => {
+    setConfirmDelete({ isOpen: true, studentId: id });
+  };
 
+  const closeDeleteConfirm = () => {
+    setConfirmDelete({ isOpen: false, studentId: null });
+  };
+
+  const handleDelete = async () => {
     try {
-      await studentService.delete(id);
+      await studentService.delete(confirmDelete.studentId);
+      toast.success(MESSAGES.STUDENT_DELETED);
       fetchStudents(meta.current_page, search);
     } catch {
-      alert(MESSAGES.GENERIC_ERROR);
+      toast.error(MESSAGES.GENERIC_ERROR);
     }
   };
 
@@ -53,6 +63,17 @@ export default function StudentList() {
 
   return (
     <div>
+      <ConfirmModal
+        isOpen={confirmDelete.isOpen}
+        onClose={closeDeleteConfirm}
+        onConfirm={handleDelete}
+        title="Excluir Aluno"
+        message={MESSAGES.CONFIRM_DELETE}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        variant="danger"
+      />
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Alunos</h1>
         <Link
@@ -125,7 +146,7 @@ export default function StudentList() {
                         Editar
                       </Link>
                       <button
-                        onClick={() => handleDelete(student.id)}
+                        onClick={() => openDeleteConfirm(student.id)}
                         className="text-red-600 dark:text-red-400 hover:underline"
                       >
                         Excluir

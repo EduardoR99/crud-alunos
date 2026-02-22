@@ -4,13 +4,6 @@ namespace App\Traits;
 
 use CodeIgniter\HTTP\ResponseInterface;
 
-/**
- * Trait para padronizar todas as respostas da API.
- *
- * Garante formato consistente em todos os endpoints:
- * - Sucesso: { status: "success", message?, data?, meta? }
- * - Erro:    { status: "error", message, errors? }
- */
 trait ApiResponseTrait
 {
     protected function success(
