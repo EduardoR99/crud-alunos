@@ -11,6 +11,7 @@ import MaskedInput from '../components/MaskedInput';
 import AddressFields from '../components/AddressFields';
 import ContactFields from '../components/ContactFields';
 import ConfirmModal from '../components/ConfirmModal';
+import PhotoUpload from '../components/PhotoUpload';
 import { maskCpf } from '../utils/masks';
 import { studentService } from '../services/studentService';
 
@@ -21,6 +22,7 @@ export default function StudentForm() {
 
   const { loading, error, getStudent, saveStudent } = useStudentForm();
   const [loadingData, setLoadingData] = useState(isEditing);
+  const [photo, setPhoto] = useState(null);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [deletedStudentId, setDeletedStudentId] = useState(null);
   const [pendingFormData, setPendingFormData] = useState(null);
@@ -54,6 +56,10 @@ export default function StudentForm() {
       const data = await getStudent(Number(id));
 
       if (data) {
+        if (data.foto) {
+          setPhoto(data.foto);
+        }
+
         reset({
           student: {
             nome_completo: data.nome_completo || '',
@@ -88,7 +94,11 @@ export default function StudentForm() {
   }, [id, isEditing, getStudent, reset]);
 
   const onSubmit = async (data) => {
-    const result = await saveStudent(data, isEditing ? Number(id) : null);
+    const payload = {
+      ...data,
+      student: { ...data.student, foto: photo || null },
+    };
+    const result = await saveStudent(payload, isEditing ? Number(id) : null);
 
     if (result.success) {
       toast.success(isEditing ? MESSAGES.STUDENT_UPDATED : MESSAGES.STUDENT_CREATED);
@@ -104,7 +114,11 @@ export default function StudentForm() {
     if (!deletedStudentId || !pendingFormData) return;
 
     try {
-      await studentService.restore(deletedStudentId, pendingFormData);
+      const restoreData = {
+        ...pendingFormData,
+        student: { ...pendingFormData.student, foto: photo || null },
+      };
+      await studentService.restore(deletedStudentId, restoreData);
       toast.success('Aluno restaurado e atualizado com sucesso!');
       navigate('/students');
     } catch (err) {
@@ -139,6 +153,10 @@ export default function StudentForm() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Dados Pessoais
           </h2>
+
+          <div className="mb-6">
+            <PhotoUpload value={photo} onChange={setPhoto} />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
